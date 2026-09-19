@@ -109,7 +109,85 @@ const getCurrentUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Register a new user (Employee or Admin)
+// @route   POST /api/auth/register
+// @access  Public
+const registerUser = async (req, res) => {
+  try {
+    const { name, email, password, role = 'employee', department = 'Engineering' } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, and password'
+      });
+    }
+
+    const existingUser = await dataService.findUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email address already exists'
+      });
+    }
+
+    const normalizedRole = role.toLowerCase() === 'admin' ? 'admin' : 'employee';
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const initials = name
+      .trim()
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || (normalizedRole === 'admin' ? 'AD' : 'EM');
+
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    const employeeId = normalizedRole === 'admin' ? `ADM${randomNum}` : `EMP${randomNum}`;
+
+    const createdUser = await dataService.createUser({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      role: normalizedRole,
+      employeeId,
+      department: department.trim() || (normalizedRole === 'admin' ? 'Administration' : 'Engineering'),
+      totalLeave: normalizedRole === 'admin' ? 25 : 20,
+      usedLeave: 0,
+      availableLeave: normalizedRole === 'admin' ? 25 : 20,
+      avatarInitials: initials
+    });
+
+    const token = generateToken(createdUser._id, createdUser.role);
+
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully',
+      token,
+      user: {
+        id: createdUser._id,
+        name: createdUser.name,
+        email: createdUser.email,
+        role: createdUser.role,
+        employeeId: createdUser.employeeId,
+        department: createdUser.department,
+        totalLeave: createdUser.totalLeave,
+        usedLeave: createdUser.usedLeave,
+        availableLeave: createdUser.availableLeave,
+        avatarInitials: createdUser.avatarInitials
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed. Please try again.',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   loginUser,
+  registerUser,
   getCurrentUserProfile
 };

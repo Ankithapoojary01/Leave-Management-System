@@ -47,6 +47,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (userData) => {
+    const res = await api.post('/auth/register', userData);
+    if (res.data.success) {
+      const { token: receivedToken, user: receivedUser } = res.data;
+      setToken(receivedToken);
+      setUser(receivedUser);
+      localStorage.setItem('leaveflow_token', receivedToken);
+      localStorage.setItem('leaveflow_user', JSON.stringify(receivedUser));
+      return receivedUser;
+    } else {
+      throw new Error(res.data.message || 'Registration failed');
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('leaveflow_token');
     localStorage.removeItem('leaveflow_user');
@@ -67,7 +81,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

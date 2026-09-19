@@ -387,15 +387,26 @@ h1, h2, h3, h4 {
 
 .login-footer-text {
   text-align: center;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text-muted);
   margin-top: 22px;
 }
 
-.contact-link {
-  color: var(--text-main);
-  font-weight: 600;
+.switch-mode-link {
+  background: none;
+  border: none;
+  color: var(--primary-blue);
+  font-weight: 700;
+  font-size: 13px;
   cursor: pointer;
+  padding: 0 4px;
+  text-decoration: underline;
+  font-family: inherit;
+  transition: color 0.2s;
+}
+
+.switch-mode-link:hover {
+  color: var(--primary-blue-hover);
 }
 
 /* ==========================================================================

@@ -297,6 +297,22 @@ const dataService = {
     return memoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
   },
 
+  async createUser(userData) {
+    if (getIsConnected()) {
+      return await User.create(userData);
+    }
+    const newUser = {
+      _id: (userData.role === 'admin' ? 'admin_' : 'user_') + Date.now(),
+      totalLeave: 20,
+      usedLeave: 0,
+      availableLeave: 20,
+      ...userData,
+      createdAt: new Date()
+    };
+    memoryUsers.push(newUser);
+    return newUser;
+  },
+
   async findUserById(id) {
     if (getIsConnected()) {
       return await User.findById(id).select('-password');
