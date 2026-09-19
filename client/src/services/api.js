@@ -20,9 +20,25 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: automatically fall back to client mock store if static host returns 405, 404 or network error
+// Response interceptor: automatically fall back to client mock store if static host returns HTML or 405/404/network error
 api.interceptors.response.use(
-  (response) => response,
+  async (response) => {
+    // Detect if static hosting (Vercel/GitHub Pages) returned index.html content for an API endpoint
+    const isHtmlResponse =
+      typeof response.data === 'string' &&
+      (response.data.includes('<!DOCTYPE html>') ||
+        response.data.includes('<html') ||
+        response.data.includes('<head'));
+
+    if (isHtmlResponse && response.config) {
+      try {
+        return await handleMockFallback(response.config);
+      } catch (mockErr) {
+        return Promise.reject(mockErr);
+      }
+    }
+    return response;
+  },
   async (error) => {
     const isStaticHostError =
       error.response?.status === 405 ||
