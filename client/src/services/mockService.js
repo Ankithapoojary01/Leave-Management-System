@@ -2,6 +2,7 @@
 const DEFAULT_USERS = [
   {
     id: 'user_001',
+    _id: 'user_001',
     name: 'Ankitha Poojary',
     email: 'ankitha@example.com',
     password: 'password123',
@@ -9,12 +10,13 @@ const DEFAULT_USERS = [
     employeeId: 'EMP001',
     department: 'Engineering',
     totalLeave: 20,
-    usedLeave: 0,
-    availableLeave: 20,
+    usedLeave: 3,
+    availableLeave: 17,
     avatarInitials: 'AP'
   },
   {
     id: 'user_002',
+    _id: 'user_002',
     name: 'Rahul Sharma',
     email: 'rahul@example.com',
     password: 'password123',
@@ -28,6 +30,7 @@ const DEFAULT_USERS = [
   },
   {
     id: 'user_003',
+    _id: 'user_003',
     name: 'Sneha Iyer',
     email: 'sneha@example.com',
     password: 'password123',
@@ -41,6 +44,7 @@ const DEFAULT_USERS = [
   },
   {
     id: 'user_004',
+    _id: 'user_004',
     name: 'Karan Patel',
     email: 'karan@example.com',
     password: 'password123',
@@ -54,12 +58,13 @@ const DEFAULT_USERS = [
   },
   {
     id: 'admin_001',
+    _id: 'admin_001',
     name: 'Admin',
     email: 'admin@example.com',
     password: 'password123',
     role: 'admin',
     employeeId: 'ADM001',
-    department: 'Administration',
+    department: '',
     totalLeave: 25,
     usedLeave: 0,
     availableLeave: 25,
@@ -80,18 +85,20 @@ const DEFAULT_LEAVES = [
     duration: 3,
     reason: 'Family function attendance',
     status: 'Approved',
-    adminRemark: 'Approved',
+    adminRemark: 'Approved by Manager',
     createdAt: '2026-09-08T10:00:00.000Z'
   },
   {
     _id: 'leave_002',
     employee: 'user_002',
     employeeName: 'Rahul Sharma',
+    employeeId: 'EMP002',
+    department: 'Finance',
     leaveType: 'Sick Leave',
     startDate: '15 Sep 2026',
     endDate: '16 Sep 2026',
     duration: 2,
-    reason: 'Viral fever and rest',
+    reason: 'Viral fever and doctor advice',
     status: 'Pending',
     adminRemark: '',
     createdAt: '2026-09-14T10:00:00.000Z'
@@ -100,6 +107,8 @@ const DEFAULT_LEAVES = [
     _id: 'leave_003',
     employee: 'user_003',
     employeeName: 'Sneha Iyer',
+    employeeId: 'EMP003',
+    department: 'HR',
     leaveType: 'Earned Leave',
     startDate: '01 Jul 2026',
     endDate: '05 Jul 2026',
@@ -113,13 +122,15 @@ const DEFAULT_LEAVES = [
     _id: 'leave_004',
     employee: 'user_004',
     employeeName: 'Karan Patel',
+    employeeId: 'EMP004',
+    department: 'Engineering',
     leaveType: 'Casual Leave',
     startDate: '20 Aug 2026',
     endDate: '22 Aug 2026',
     duration: 3,
     reason: 'Personal errands',
     status: 'Rejected',
-    adminRemark: 'Critical release scheduled',
+    adminRemark: 'Critical release scheduled on these dates',
     createdAt: '2026-08-15T10:00:00.000Z'
   }
 ];
@@ -127,7 +138,10 @@ const DEFAULT_LEAVES = [
 const getStoredUsers = () => {
   const saved = localStorage.getItem('leaveflow_cloud_users');
   if (saved) {
-    try { return JSON.parse(saved); } catch (e) {}
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
   }
   localStorage.setItem('leaveflow_cloud_users', JSON.stringify(DEFAULT_USERS));
   return DEFAULT_USERS;
@@ -140,7 +154,10 @@ const saveStoredUsers = (users) => {
 const getStoredLeaves = () => {
   const saved = localStorage.getItem('leaveflow_cloud_leaves');
   if (saved) {
-    try { return JSON.parse(saved); } catch (e) {}
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
   }
   localStorage.setItem('leaveflow_cloud_leaves', JSON.stringify(DEFAULT_LEAVES));
   return DEFAULT_LEAVES;
@@ -166,10 +183,19 @@ export const handleMockFallback = (config) => {
   const leaves = getStoredLeaves();
   const currentUser = JSON.parse(localStorage.getItem('leaveflow_user') || 'null');
 
+  const resolveUser = () => {
+    if (!currentUser) return DEFAULT_USERS[0];
+    return users.find(u =>
+      (currentUser.id && (u.id === currentUser.id || u._id === currentUser.id)) ||
+      (currentUser.email && u.email?.toLowerCase() === currentUser.email?.toLowerCase()) ||
+      (currentUser.employeeId && u.employeeId === currentUser.employeeId)
+    ) || currentUser;
+  };
+
   // 1. POST /auth/login
   if (url.includes('/auth/login') && method === 'post') {
     const { email, password, role } = body;
-    const user = users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
+    const user = users.find(u => u.email.toLowerCase() === (email || '').trim().toLowerCase());
     if (!user) {
       return Promise.reject({ response: { status: 401, data: { message: 'Invalid email or password' } } });
     }
@@ -186,8 +212,8 @@ export const handleMockFallback = (config) => {
       data: {
         success: true,
         message: 'Login successful',
-        token: 'mock_jwt_token_' + user.id,
-        user: safeUser
+        token: 'mock_jwt_token_' + (user.id || user._id),
+        user: { ...safeUser, id: user.id || user._id }
       }
     });
   }
@@ -195,7 +221,7 @@ export const handleMockFallback = (config) => {
   // 2. POST /auth/register
   if (url.includes('/auth/register') && method === 'post') {
     const { name, email, password, role = 'employee', department = 'Engineering' } = body;
-    const exists = users.find(u => u.email.toLowerCase() === (email || '').toLowerCase());
+    const exists = users.find(u => u.email.toLowerCase() === (email || '').trim().toLowerCase());
     if (exists) {
       return Promise.reject({ response: { status: 400, data: { message: 'Email is already registered' } } });
     }
@@ -203,8 +229,10 @@ export const handleMockFallback = (config) => {
     const normalizedRole = role.toLowerCase() === 'admin' ? 'admin' : 'employee';
     const initials = name.trim().split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'EM';
     const rand = Math.floor(100 + Math.random() * 900);
+    const newId = (normalizedRole === 'admin' ? 'admin_' : 'user_') + Date.now();
     const newUser = {
-      id: (normalizedRole === 'admin' ? 'admin_' : 'user_') + Date.now(),
+      id: newId,
+      _id: newId,
       name: name.trim(),
       email: email.trim().toLowerCase(),
       password,
@@ -226,7 +254,7 @@ export const handleMockFallback = (config) => {
       data: {
         success: true,
         message: 'Account created successfully',
-        token: 'mock_jwt_token_' + newUser.id,
+        token: 'mock_jwt_token_' + newId,
         user: safeUser
       }
     });
@@ -234,18 +262,21 @@ export const handleMockFallback = (config) => {
 
   // 3. GET /auth/me
   if (url.includes('/auth/me')) {
-    if (!currentUser) {
-      return Promise.reject({ response: { status: 401, data: { message: 'Not authorized' } } });
-    }
-    const freshUser = users.find(u => u.id === currentUser.id) || currentUser;
+    const freshUser = resolveUser();
     const { password: _, ...safeUser } = freshUser;
     return Promise.resolve({ status: 200, data: { success: true, user: safeUser } });
   }
 
   // 4. GET /leaves/my-stats
   if (url.includes('/leaves/my-stats')) {
-    const freshUser = users.find(u => u.id === currentUser?.id) || currentUser || DEFAULT_USERS[0];
-    const userLeaves = leaves.filter(l => l.employee === freshUser.id || l.employeeId === freshUser.employeeId);
+    const freshUser = resolveUser();
+    const userLeaves = leaves.filter(l =>
+      (freshUser.id && (l.employee === freshUser.id || l.employee === freshUser._id)) ||
+      (freshUser._id && (l.employee === freshUser._id || l.employee === freshUser.id)) ||
+      (freshUser.employeeId && l.employeeId === freshUser.employeeId) ||
+      (freshUser.email && l.email && l.email.toLowerCase() === freshUser.email.toLowerCase()) ||
+      (freshUser.name && l.employeeName && l.employeeName.toLowerCase() === freshUser.name.toLowerCase())
+    );
     const pendingCount = userLeaves.filter(l => l.status === 'Pending').length;
 
     return Promise.resolve({
@@ -253,9 +284,9 @@ export const handleMockFallback = (config) => {
       data: {
         success: true,
         stats: {
-          totalLeave: freshUser.totalLeave,
-          availableLeave: freshUser.availableLeave,
-          usedLeave: freshUser.usedLeave,
+          totalLeave: freshUser.totalLeave || 20,
+          availableLeave: freshUser.availableLeave !== undefined ? freshUser.availableLeave : (freshUser.totalLeave || 20) - (freshUser.usedLeave || 0),
+          usedLeave: freshUser.usedLeave || 0,
           pendingRequests: pendingCount,
           recentRequests: userLeaves.slice(0, 5)
         }
@@ -265,8 +296,15 @@ export const handleMockFallback = (config) => {
 
   // 5. GET /leaves/my-leaves
   if (url.includes('/leaves/my-leaves')) {
-    const freshUser = users.find(u => u.id === currentUser?.id) || currentUser || DEFAULT_USERS[0];
-    const userLeaves = leaves.filter(l => l.employee === freshUser.id || l.employeeId === freshUser.employeeId);
+    const freshUser = resolveUser();
+    const userLeaves = leaves.filter(l =>
+      (freshUser.id && (l.employee === freshUser.id || l.employee === freshUser._id)) ||
+      (freshUser._id && (l.employee === freshUser._id || l.employee === freshUser.id)) ||
+      (freshUser.employeeId && l.employeeId === freshUser.employeeId) ||
+      (freshUser.email && l.email && l.email.toLowerCase() === freshUser.email.toLowerCase()) ||
+      (freshUser.name && l.employeeName && l.employeeName.toLowerCase() === freshUser.name.toLowerCase())
+    );
+
     return Promise.resolve({
       status: 200,
       data: { success: true, count: userLeaves.length, leaves: userLeaves }
@@ -276,16 +314,16 @@ export const handleMockFallback = (config) => {
   // 6. POST /leaves/apply
   if (url.includes('/leaves/apply') && method === 'post') {
     const { leaveType, startDate, endDate, duration, reason } = body;
-    const freshUser = users.find(u => u.id === currentUser?.id) || currentUser || DEFAULT_USERS[0];
+    const freshUser = resolveUser();
     const leaveDuration = Number(duration) || 1;
 
     const newLeave = {
       _id: 'leave_' + Date.now(),
-      employee: freshUser.id,
-      employeeName: freshUser.name,
-      employeeId: freshUser.employeeId,
-      department: freshUser.department,
-      leaveType,
+      employee: freshUser.id || freshUser._id || 'user_001',
+      employeeName: freshUser.name || 'Employee',
+      employeeId: freshUser.employeeId || 'EMP001',
+      department: freshUser.department || 'Engineering',
+      leaveType: leaveType || 'Casual Leave',
       startDate,
       endDate,
       duration: leaveDuration,
@@ -326,17 +364,26 @@ export const handleMockFallback = (config) => {
       if (adminRemark) leave.adminRemark = adminRemark;
 
       // Adjust user balance
-      const emp = users.find(u => u.id === leave.employee || u.employeeId === leave.employeeId);
+      const emp = users.find(u =>
+        (leave.employee && (u.id === leave.employee || u._id === leave.employee)) ||
+        (leave.employeeId && u.employeeId === leave.employeeId) ||
+        (leave.employeeName && u.name && u.name.toLowerCase() === leave.employeeName.toLowerCase())
+      );
+
       if (emp) {
         if (status === 'Approved' && oldStatus !== 'Approved') {
-          emp.usedLeave += leave.duration;
-          emp.availableLeave = Math.max(0, emp.totalLeave - emp.usedLeave);
+          emp.usedLeave = (emp.usedLeave || 0) + leave.duration;
+          emp.availableLeave = Math.max(0, (emp.totalLeave || 20) - emp.usedLeave);
         }
         if (oldStatus === 'Approved' && status !== 'Approved') {
-          emp.usedLeave = Math.max(0, emp.usedLeave - leave.duration);
-          emp.availableLeave = Math.max(0, emp.totalLeave - emp.usedLeave);
+          emp.usedLeave = Math.max(0, (emp.usedLeave || 0) - leave.duration);
+          emp.availableLeave = Math.max(0, (emp.totalLeave || 20) - emp.usedLeave);
         }
         saveStoredUsers(users);
+
+        if (currentUser && (currentUser.id === emp.id || currentUser.email === emp.email)) {
+          localStorage.setItem('leaveflow_user', JSON.stringify(emp));
+        }
       }
       saveStoredLeaves(leaves);
     }
@@ -372,13 +419,13 @@ export const handleMockFallback = (config) => {
       data: {
         success: true,
         balances: emps.map(e => ({
-          id: e.id,
+          id: e.id || e._id,
           employeeName: e.name,
           email: e.email,
           department: e.department,
-          total: e.totalLeave,
-          used: e.usedLeave,
-          available: e.availableLeave
+          total: e.totalLeave || 20,
+          used: e.usedLeave || 0,
+          available: e.availableLeave !== undefined ? e.availableLeave : (e.totalLeave || 20) - (e.usedLeave || 0)
         }))
       }
     });
