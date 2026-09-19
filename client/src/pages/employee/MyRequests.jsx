@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
+import { formatDateDisplay } from '../../utils/dateFormatter';
 
 const MyRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -110,9 +111,9 @@ const MyRequests = () => {
                   <tr key={req._id || index}>
                     <td>{index + 1}</td>
                     <td className="font-semibold">{req.leaveType}</td>
-                    <td>{req.startDate}</td>
-                    <td>{req.endDate}</td>
-                    <td>{req.duration} {req.duration === 1 ? 'day' : 'days'}</td>
+                    <td>{formatDateDisplay(req.startDate)}</td>
+                    <td>{formatDateDisplay(req.endDate)}</td>
+                    <td>{req.duration || req.days || 1} { (req.duration || req.days || 1) === 1 ? 'day' : 'days'}</td>
                     <td className="text-truncate-cell" title={req.reason}>
                       {req.reason}
                       {req.adminRemark && (

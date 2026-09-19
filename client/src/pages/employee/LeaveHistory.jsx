@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { formatDateDisplay } from '../../utils/dateFormatter';
 
 const LeaveHistory = () => {
   const [history, setHistory] = useState([]);
@@ -88,9 +89,9 @@ const LeaveHistory = () => {
                   <tr key={item._id || index}>
                     <td>{index + 1}</td>
                     <td className="font-semibold">{item.leaveType}</td>
-                    <td>{item.startDate}</td>
-                    <td>{item.endDate}</td>
-                    <td>{item.duration} {item.duration === 1 ? 'day' : 'days'}</td>
+                    <td>{formatDateDisplay(item.startDate)}</td>
+                    <td>{formatDateDisplay(item.endDate)}</td>
+                    <td>{item.duration || item.days || 1} { (item.duration || item.days || 1) === 1 ? 'day' : 'days'}</td>
                     <td>{item.reason}</td>
                     <td>
                       <span className={`status-pill ${getStatusBadgeClass(item.status)}`}>

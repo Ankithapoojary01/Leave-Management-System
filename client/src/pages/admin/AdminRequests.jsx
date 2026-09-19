@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { formatDateDisplay } from '../../utils/dateFormatter';
 
 const AdminRequests = () => {
   const [leaves, setLeaves] = useState([]);
@@ -153,9 +154,9 @@ const AdminRequests = () => {
                         {leave.employeeName || leave.employee?.name || 'Employee'}
                       </td>
                       <td>{leave.leaveType}</td>
-                      <td>{leave.startDate}</td>
-                      <td>{leave.endDate}</td>
-                      <td>{leave.duration}</td>
+                      <td>{formatDateDisplay(leave.startDate)}</td>
+                      <td>{formatDateDisplay(leave.endDate)}</td>
+                      <td>{leave.duration || leave.days || 1} { (leave.duration || leave.days || 1) === 1 ? 'day' : 'days'}</td>
                       <td>
                         <span className={`status-pill ${getStatusBadgeClass(leave.status)}`}>
                           {leave.status}

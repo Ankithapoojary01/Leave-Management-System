@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { formatDateDisplay } from '../../utils/dateFormatter';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -182,9 +183,9 @@ const EmployeeDashboard = () => {
                   <tr key={req._id || index}>
                     <td>{index + 1}</td>
                     <td className="font-semibold">{req.leaveType}</td>
-                    <td>{req.startDate}</td>
-                    <td>{req.endDate}</td>
-                    <td>{req.duration} {req.duration === 1 ? 'day' : 'days'}</td>
+                    <td>{formatDateDisplay(req.startDate)}</td>
+                    <td>{formatDateDisplay(req.endDate)}</td>
+                    <td>{req.duration || req.days || 1} { (req.duration || req.days || 1) === 1 ? 'day' : 'days'}</td>
                     <td>
                       <span className={`status-pill ${getStatusBadgeClass(req.status)}`}>
                         {req.status}
