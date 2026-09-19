@@ -27,27 +27,46 @@ const ApplyLeave = () => {
 
   const todayString = getTodayString();
 
-  // Automatically calculate number of days when dates change
+  // Calculate total leave days excluding Sundays only (Saturday is counted)
+  const calculateLeaveDays = (startStr, endStr) => {
+    if (!startStr || !endStr) return 0;
+    const [sYear, sMonth, sDay] = startStr.split('-').map(Number);
+    const [eYear, eMonth, eDay] = endStr.split('-').map(Number);
+
+    const start = new Date(sYear, sMonth - 1, sDay);
+    const end = new Date(eYear, eMonth - 1, eDay);
+
+    if (end < start) return 0;
+
+    let count = 0;
+    const cur = new Date(start);
+    while (cur <= end) {
+      if (cur.getDay() !== 0) { // Exclude Sunday (0), Saturday (6) is counted
+        count++;
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+  };
+
+  // Automatically calculate number of days when dates change (excluding Sundays)
   useEffect(() => {
     if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
       if (startDate < todayString) {
         setDuration(0);
         setError('Leave start date cannot be before today.');
         return;
       }
 
-      if (end >= start) {
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-        setDuration(diffDays);
-        setError('');
-      } else {
+      if (endDate < startDate) {
         setDuration(0);
         setError('End Date cannot be earlier than Start Date.');
+        return;
       }
+
+      const count = calculateLeaveDays(startDate, endDate);
+      setDuration(count);
+      setError('');
     }
   }, [startDate, endDate]);
 
@@ -86,7 +105,7 @@ const ApplyLeave = () => {
     }
 
     if (duration <= 0) {
-      setError('Please choose valid dates.');
+      setError('Selected range contains 0 leave days because Sundays are excluded from leave calculations.');
       return;
     }
     if (!reason.trim()) {

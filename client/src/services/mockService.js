@@ -330,6 +330,15 @@ export const handleMockFallback = (config) => {
       });
     }
 
+    if (leaveDuration <= 0) {
+      return Promise.reject({
+        response: {
+          status: 400,
+          data: { message: 'Leave duration must be at least 1 day (Sundays are excluded from leave count)' }
+        }
+      });
+    }
+
     const newLeave = {
       _id: 'leave_' + Date.now(),
       employee: freshUser.id || freshUser._id || 'user_001',
