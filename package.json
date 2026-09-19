@@ -1,0 +1,23 @@
+{
+  "name": "leave-management-system",
+  "version": "1.0.0",
+  "description": "LeaveFlow - Complete MERN Stack Leave Management System",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "start:server": "npm --prefix server start",
+    "build:client": "npm --prefix client run build",
+    "seed": "npm --prefix server run seed"
+  },
+  "keywords": [
+    "leave-management-system",
+    "mern",
+    "react",
+    "nodejs",
+    "express",
+    "mongodb",
+    "jwt"
+  ],
+  "author": "Candidate",
+  "license": "ISC"
+}
