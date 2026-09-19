@@ -317,6 +317,19 @@ export const handleMockFallback = (config) => {
     const freshUser = resolveUser();
     const leaveDuration = Number(duration) || 1;
 
+    // Reject past dates
+    const parsedStart = new Date(startDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!isNaN(parsedStart.getTime()) && parsedStart < today) {
+      return Promise.reject({
+        response: {
+          status: 400,
+          data: { message: 'Leave start date cannot be before today' }
+        }
+      });
+    }
+
     const newLeave = {
       _id: 'leave_' + Date.now(),
       employee: freshUser.id || freshUser._id || 'user_001',

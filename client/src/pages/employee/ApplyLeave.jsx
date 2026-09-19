@@ -16,11 +16,28 @@ const ApplyLeave = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Compute today's date in YYYY-MM-DD for min attribute
+  const getTodayString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayString = getTodayString();
+
   // Automatically calculate number of days when dates change
   useEffect(() => {
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
+
+      if (startDate < todayString) {
+        setDuration(0);
+        setError('Leave start date cannot be before today.');
+        return;
+      }
 
       if (end >= start) {
         const diffTime = Math.abs(end - start);
@@ -57,6 +74,17 @@ const ApplyLeave = () => {
       setError('Please select both Start Date and End Date.');
       return;
     }
+
+    if (startDate < todayString) {
+      setError('Leave dates before today are not allowed. Please select today or a future date.');
+      return;
+    }
+
+    if (endDate < startDate) {
+      setError('End Date cannot be earlier than Start Date.');
+      return;
+    }
+
     if (duration <= 0) {
       setError('Please choose valid dates.');
       return;
@@ -156,6 +184,7 @@ const ApplyLeave = () => {
                 <input
                   type="date"
                   className="form-input"
+                  min={todayString}
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   required
@@ -171,6 +200,7 @@ const ApplyLeave = () => {
                 <input
                   type="date"
                   className="form-input"
+                  min={startDate || todayString}
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required

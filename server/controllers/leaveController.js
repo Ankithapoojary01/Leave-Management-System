@@ -22,6 +22,18 @@ const applyLeave = async (req, res) => {
       });
     }
 
+    // Check if start date is in the past
+    const parsedStart = new Date(startDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!isNaN(parsedStart.getTime()) && parsedStart < today) {
+      return res.status(400).json({
+        success: false,
+        message: 'Leave start date cannot be before today'
+      });
+    }
+
     // Check employee current leave balance
     const user = await dataService.findUserById(req.user._id);
     if (!user) {
