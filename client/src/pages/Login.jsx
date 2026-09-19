@@ -264,8 +264,8 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Department (Only on Register) */}
-              {isRegister && (
+              {/* Department (Only for Employee Register) */}
+              {isRegister && role.toLowerCase() === 'employee' && (
                 <div className="form-group">
                   <label className="form-label">Department</label>
                   <div className="select-wrapper">
@@ -279,7 +279,6 @@ const Login = () => {
                       <option value="HR">HR</option>
                       <option value="Marketing">Marketing</option>
                       <option value="Operations">Operations</option>
-                      <option value="Administration">Administration</option>
                     </select>
                   </div>
                 </div>

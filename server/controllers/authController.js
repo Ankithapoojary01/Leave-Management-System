@@ -150,7 +150,7 @@ const registerUser = async (req, res) => {
       password: hashedPassword,
       role: normalizedRole,
       employeeId,
-      department: department.trim() || (normalizedRole === 'admin' ? 'Administration' : 'Engineering'),
+      department: normalizedRole === 'admin' ? '' : (department.trim() || 'Engineering'),
       totalLeave: normalizedRole === 'admin' ? 25 : 20,
       usedLeave: 0,
       availableLeave: normalizedRole === 'admin' ? 25 : 20,
