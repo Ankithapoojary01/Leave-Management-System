@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { handleMockFallback } from './mockService';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -19,18 +20,33 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle unauthorized sessions
+// Response interceptor: automatically fall back to client mock store if static host returns 405, 404 or network error
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const isStaticHostError =
+      error.response?.status === 405 ||
+      error.response?.status === 404 ||
+      !error.response ||
+      error.code === 'ERR_NETWORK';
+
+    if (isStaticHostError && error.config) {
+      try {
+        const mockResponse = await handleMockFallback(error.config);
+        return mockResponse;
+      } catch (mockErr) {
+        return Promise.reject(mockErr);
+      }
+    }
+
     if (error.response && error.response.status === 401) {
-      // Clear token if invalid/expired
       localStorage.removeItem('leaveflow_token');
       localStorage.removeItem('leaveflow_user');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
     }
+
     return Promise.reject(error);
   }
 );
